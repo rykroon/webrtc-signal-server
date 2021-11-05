@@ -1,0 +1,5 @@
+aioredis==2.0.0
+gunicorn==20.1.0
+starlette==0.16.0
+uvicorn==0.15.0
+websockets==10.0
