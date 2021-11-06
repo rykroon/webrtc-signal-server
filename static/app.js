@@ -30,22 +30,46 @@ function init() {
 async function createRoom() {
   document.querySelector('#createBtn').disabled = true;
   document.querySelector('#joinBtn').disabled = true;
-  const db = firebase.firestore();
+  //const db = firebase.firestore();
 
   console.log('Create PeerConnection with configuration: ', configuration);
   peerConnection = new RTCPeerConnection(configuration);
 
   registerPeerConnectionListeners();
-
-  // Add code for creating a room here
-  
-  // Code for creating room above
   
   localStream.getTracks().forEach(track => {
     peerConnection.addTrack(track, localStream);
   });
 
   // Code for creating a room below
+  const roomId = '1234'
+  const ws = new WebSocket(`wss://localhost:8000/ws?channel=${roomId}:caller`)
+  const offer = peerConnection.createOffer()
+
+  ws.onopen = async function(event) {
+    msg = {
+      type: 'offer',
+      to: `${roomId}:callee`,
+      data: offer.toJSON()
+    }
+    ws.send(JSON.stringify(msg))
+  }
+
+  ws.onmessage = function(event) {
+    msg = JSON.parse(event.data)
+    console.log(msg)
+
+    if (msg.type == 'answer') {
+      const answer = new RTCSessionDescription(msg.data)
+      peerConnection.setLocalDescription(offer)
+      peerConnection.setRemoteDescription(answer)
+    }
+
+    if (msg.type == 'ice-candidate') {
+      const candidate = new RTCIceCandidate(msg.data)
+      peerConnection.addIceCandidate(candidate)
+    }
+  }
 
   // Code for creating a room above
 
@@ -86,10 +110,10 @@ function joinRoom() {
 }
 
 async function joinRoomById(roomId) {
-  const db = firebase.firestore();
-  const roomRef = db.collection('rooms').doc(`${roomId}`);
-  const roomSnapshot = await roomRef.get();
-  console.log('Got room:', roomSnapshot.exists);
+  //const db = firebase.firestore();
+  //const roomRef = db.collection('rooms').doc(`${roomId}`);
+  //const roomSnapshot = await roomRef.get();
+  //console.log('Got room:', roomSnapshot.exists);
 
   if (roomSnapshot.exists) {
     console.log('Create PeerConnection with configuration: ', configuration);
