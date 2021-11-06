@@ -1,10 +1,14 @@
 import os
+from starlette.config import Config
 
+
+_config = Config()
 _cpu_count = os.cpu_count()
 
-bind        = os.getenv('GUNICORN_BIND', '0.0.0.0')
-loglevel    = os.getenv('GUNICORN_LOGLEVEL', 'info')
-preload_app = os.getenv('GUNICORN_PRELOAD_APP', True)
-reload      = os.getenv('GUNICORN_RELOAD', False)
-workers     = os.getenv('GUNICORN_WORKERS', 2 * _cpu_count + 1)
-worker_class    = os.getenv('GUNICORN_WORKER_CLASS', 'uvicorn.workers.UvicornWorker')
+
+bind            = _config.get('GUNICORN_BIND', default='0.0.0.0')
+loglevel        = _config.get('GUNICORN_LOGLEVEL', default='info')
+preload_app     = _config.get('GUNICORN_PRELOAD_APP', cast=bool, default=True)
+reload          = _config.get('GUNICORN_RELOAD', cast=bool, default=False)
+workers         = _config.get('GUNICORN_WORKERS', cast=int, default=2 * _cpu_count + 1)
+worker_class    = _config.get('GUNICORN_WORKER_CLASS', default='uvicorn.workers.UvicornWorker')
