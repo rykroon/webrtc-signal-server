@@ -1,6 +1,5 @@
 import asyncio
 import json
-from os import close
 
 import aioredis
 from starlette.endpoints import HTTPEndpoint, WebSocketEndpoint
@@ -39,6 +38,7 @@ class Websocket(WebSocketEndpoint):
         if messages:
             for msg in messages:
                 await ws.send_text(json.dumps(msg))
+        await ws.state.cache.delete(ws.state.channel)
 
     async def on_receive(self, ws, data):
         app = ws.app
@@ -59,8 +59,8 @@ class Websocket(WebSocketEndpoint):
 
     async def on_disconnect(self, ws, close_code):
         ws.state.pubsub_task.cancel()
-        ws.state.pubsub.unsubscribe(ws.state.channel)
-        ws.state.redis.close()
+        await ws.state.pubsub.unsubscribe(ws.state.channel)
+        await ws.state.redis.close()
         await ws.close(code=close_code)
 
 
@@ -70,6 +70,6 @@ async def listen_and_send(ws):
     while True:
         psmsg = await pubsub.get_message(ignore_subscribe_messages=True, timeout=.01)
         if psmsg:
-            wsmsg = psmsg['data']
+            wsmsg = psmsg['data'].decode()
             await ws.send_text(wsmsg)
 
