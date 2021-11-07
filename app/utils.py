@@ -12,5 +12,8 @@ class Cache:
 
     async def set(self, key, value):
         value = pickle.dumps(value)
-        await self._clet.set(key, value)
+        await self._client.set(key, value)
+
+    async def delete(self, key):
+        await self._client.delete(key)
 
