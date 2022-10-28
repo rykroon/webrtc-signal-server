@@ -1,7 +1,7 @@
 import asyncio
 import json
 
-import aioredis
+from redis.asyncio import Redis
 from starlette.endpoints import HTTPEndpoint, WebSocketEndpoint
 from starlette.responses import FileResponse
 
@@ -22,7 +22,7 @@ class Websocket(WebSocketEndpoint):
         logger = app.state.logger
 
         # add redis stuff
-        ws.state.redis = aioredis.from_url('redis://redis')
+        ws.state.redis = Redis('redis://redis')
         ws.state.cache = Cache(ws.state.redis)
         pubsub = ws.state.redis.pubsub()
         ws.state.channel = ws.query_params['channel']
