@@ -30,7 +30,6 @@ function init() {
 async function createRoom() {
   document.querySelector('#createBtn').disabled = true;
   document.querySelector('#joinBtn').disabled = true;
-  //const db = firebase.firestore();
 
   console.log('Create PeerConnection with configuration: ', configuration);
   peerConnection = new RTCPeerConnection(configuration);
@@ -49,7 +48,7 @@ async function createRoom() {
   const ws = new WebSocket(`ws://${url.host}/ws?channel=${roomId}:caller`)
   const offer = await peerConnection.createOffer()
 
-  ws.onopen = async function(event) {
+  ws.onopen = async (event) => {
     msg = {
       type: 'offer',
       to: `${roomId}:callee`,
@@ -58,7 +57,7 @@ async function createRoom() {
     ws.send(JSON.stringify(msg))
   }
 
-  ws.onmessage = function(event) {
+  ws.onmessage = (event) => {
     msg = JSON.parse(event.data)
     console.log(msg)
 
@@ -77,7 +76,7 @@ async function createRoom() {
   // Code for creating a room above
 
   // Code for collecting ICE candidates below
-  peerConnection.onicecandidate = function(event) {
+  peerConnection.onicecandidate = (event) => {
       if (event.candidate) {
           const candidate = event.candidate
           peerConnection.addIceCandidate(candidate)
@@ -129,7 +128,7 @@ async function joinRoomById(roomId) {
     const url = new URL(window.location.href)
     const ws = new WebSocket(`ws://${url.host}/ws?channel=${roomId}:callee`)
 
-    ws.onmessage = async function(event) {
+    ws.onmessage = async (event) => {
       msg = JSON.parse(event.data)
 
       if (msg.type == 'offer') {
@@ -153,7 +152,7 @@ async function joinRoomById(roomId) {
     }
 
     // Code for collecting ICE candidates below
-    peerConnection.onicecandidate = function(event) {
+    peerConnection.onicecandidate = (event) => {
       if (event.candidate) {
           const candidate = event.candidate;
           peerConnection.addIceCandidate(candidate);
@@ -214,21 +213,6 @@ async function hangUp(e) {
   document.querySelector('#createBtn').disabled = true;
   document.querySelector('#hangupBtn').disabled = true;
   document.querySelector('#currentRoom').innerText = '';
-
-  // Delete room on hangup
-  if (roomId) {
-    const db = firebase.firestore();
-    const roomRef = db.collection('rooms').doc(roomId);
-    const calleeCandidates = await roomRef.collection('calleeCandidates').get();
-    calleeCandidates.forEach(async candidate => {
-      await candidate.delete();
-    });
-    const callerCandidates = await roomRef.collection('callerCandidates').get();
-    callerCandidates.forEach(async candidate => {
-      await candidate.delete();
-    });
-    await roomRef.delete();
-  }
 
   document.location.reload(true);
 }
