@@ -22,11 +22,11 @@ class Websocket(WebSocketEndpoint):
         # add redis stuff
         pubsub = app.state.redis.pubsub()
         ws.state.channel = ws.query_params['channel']
-        await pubsub.subscribe(ws.state.channel)
+        await pubsub.subscribe(**{ws.state.channel: get_handler(ws)})
         ws.state.pubsub = pubsub
 
         #create pub sub task
-        ws.state.pubsub_task = asyncio.create_task(listen_and_send(ws))
+        ws.state.pubsub_task = asyncio.create_task(ws.state.pubsub.run(poll_timeout=.01))
 
         await ws.accept()
 
@@ -61,12 +61,8 @@ class Websocket(WebSocketEndpoint):
         # await ws.close(code=close_code)
 
 
-async def listen_and_send(ws):
-    pubsub = ws.state.pubsub
-
-    while True:
-        psmsg = await pubsub.get_message(ignore_subscribe_messages=True, timeout=.01)
-        if psmsg:
-            wsmsg = psmsg['data'].decode()
-            await ws.send_text(wsmsg)
-
+def get_handler(ws):
+    async def handler(message):
+        wsmsg = message['data'].decode()
+        await ws.send_text(wsmsg)
+    return handler
