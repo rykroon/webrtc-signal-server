@@ -1,11 +1,8 @@
 import asyncio
 import json
 
-from redis.asyncio import Redis
 from starlette.endpoints import HTTPEndpoint, WebSocketEndpoint
 from starlette.responses import FileResponse
-
-from app.utils import Cache
 
 
 class Homepage(HTTPEndpoint):
@@ -20,11 +17,10 @@ class Websocket(WebSocketEndpoint):
     async def on_connect(self, ws):
         app = ws.app
         logger = app.state.logger
+        cache = app.state.cache
 
         # add redis stuff
-        ws.state.redis = Redis('redis://redis')
-        ws.state.cache = Cache(ws.state.redis)
-        pubsub = ws.state.redis.pubsub()
+        pubsub = app.state.redis.pubsub()
         ws.state.channel = ws.query_params['channel']
         await pubsub.subscribe(ws.state.channel)
         ws.state.pubsub = pubsub
@@ -34,34 +30,35 @@ class Websocket(WebSocketEndpoint):
 
         await ws.accept()
 
-        messages = await ws.state.cache.get(ws.state.channel)
+        messages = await cache.get(ws.state.channel)
         if messages:
             for msg in messages:
                 await ws.send_text(json.dumps(msg))
-        await ws.state.cache.delete(ws.state.channel)
+        await cache.delete(ws.state.channel)
 
     async def on_receive(self, ws, data):
         app = ws.app
         logger = app.state.logger
+        redis = app.state.redis
+        cache = app.state.cache
 
         to = data.pop('to')
         data['from'] = ws.state.channel
 
-        numsub = await ws.state.redis.pubsub_numsub(to)
+        numsub = await redis.pubsub_numsub(to)
         if numsub[0][1]:
-            await ws.state.redis.publish(to, json.dumps(data))
+            await redis.publish(to, json.dumps(data))
 
         else:
-            messages = await ws.state.cache.get(to) or []
+            messages = await cache.get(to) or []
             messages.append(data)
-            await ws.state.cache.set(to, messages)
+            await cache.set(to, messages)
 
 
     async def on_disconnect(self, ws, close_code):
         ws.state.pubsub_task.cancel()
         await ws.state.pubsub.unsubscribe(ws.state.channel)
-        await ws.state.redis.close()
-        await ws.close(code=close_code)
+        # await ws.close(code=close_code)
 
 
 async def listen_and_send(ws):

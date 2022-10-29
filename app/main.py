@@ -1,10 +1,12 @@
 import logging
 
+from redis.asyncio import Redis
 from starlette.applications import Starlette
 from starlette.routing import Route, WebSocketRoute, Mount
 from starlette.staticfiles import StaticFiles
 
-from app.views import Homepage, Websocket
+from views import Homepage, Websocket
+from utils import Cache
 
 
 routes = [
@@ -18,4 +20,7 @@ app = Starlette(
 )
 
 app.state.logger = logging.getLogger('gunicorn.error')
+
+app.state.redis = Redis(host='redis')
+app.state.cache = Cache(app.state.redis)
 

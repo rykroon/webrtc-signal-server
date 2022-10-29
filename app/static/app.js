@@ -46,7 +46,7 @@ async function createRoom() {
   document.querySelector('#currentRoom').innerText = `Current room is ${roomId} - You are the caller!`
 
   const url = new URL(window.location.href)
-  const ws = new WebSocket(`wss://${url.host}/ws?channel=${roomId}:caller`)
+  const ws = new WebSocket(`ws://${url.host}/ws?channel=${roomId}:caller`)
   const offer = await peerConnection.createOffer()
 
   ws.onopen = async function(event) {
@@ -127,7 +127,7 @@ async function joinRoomById(roomId) {
     });
 
     const url = new URL(window.location.href)
-    const ws = new WebSocket(`wss://${url.host}/ws?channel=${roomId}:callee`)
+    const ws = new WebSocket(`ws://${url.host}/ws?channel=${roomId}:callee`)
 
     ws.onmessage = async function(event) {
       msg = JSON.parse(event.data)
