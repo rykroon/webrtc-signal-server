@@ -18,6 +18,8 @@ let localStream = null;
 let remoteStream = null;
 let roomDialog = null;
 let roomId = null;
+let ws = null;
+const url = new URL(window.location.href)
 
 function init() {
   document.querySelector('#cameraBtn').addEventListener('click', openUserMedia);
@@ -27,25 +29,29 @@ function init() {
   roomDialog = new mdc.dialog.MDCDialog(document.querySelector('#room-dialog'));
 }
 
+
+// create RTCPeerConnection
+function createRTCPeerConnection() {
+  console.log('Create PeerConnection with configuration: ', configuration);
+  peerConnection = new RTCPeerConnection(configuration);
+  registerPeerConnectionListeners();
+  localStream.getTracks().forEach(track => {
+    peerConnection.addTrack(track, localStream);
+  });
+}
+
+
 async function createRoom() {
   document.querySelector('#createBtn').disabled = true;
   document.querySelector('#joinBtn').disabled = true;
 
-  console.log('Create PeerConnection with configuration: ', configuration);
-  peerConnection = new RTCPeerConnection(configuration);
-
-  registerPeerConnectionListeners();
-  
-  localStream.getTracks().forEach(track => {
-    peerConnection.addTrack(track, localStream);
-  });
+  createRTCPeerConnection();
 
   // Code for creating a room below
   const roomId = '1234'
   document.querySelector('#currentRoom').innerText = `Current room is ${roomId} - You are the caller!`
 
-  const url = new URL(window.location.href)
-  const ws = new WebSocket(`ws://${url.host}/ws?channel=${roomId}:caller`)
+  ws = new WebSocket(`ws://${url.host}/ws?channel=${roomId}:caller`)
   const offer = await peerConnection.createOffer()
 
   ws.onopen = async (event) => {
@@ -118,15 +124,8 @@ function joinRoom() {
 async function joinRoomById(roomId) {
 
   if (roomId) {
-    console.log('Create PeerConnection with configuration: ', configuration);
-    peerConnection = new RTCPeerConnection(configuration);
-    registerPeerConnectionListeners();
-    localStream.getTracks().forEach(track => {
-      peerConnection.addTrack(track, localStream);
-    });
-
-    const url = new URL(window.location.href)
-    const ws = new WebSocket(`ws://${url.host}/ws?channel=${roomId}:callee`)
+    createRTCPeerConnection();
+    ws = new WebSocket(`ws://${url.host}/ws?channel=${roomId}:callee`)
 
     ws.onmessage = async (event) => {
       msg = JSON.parse(event.data)
