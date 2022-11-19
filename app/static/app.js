@@ -13,6 +13,42 @@ const configuration = {
   iceCandidatePoolSize: 10,
 };
 
+
+class SignalingChannel extends EventTarget {
+  constructor(url) {
+    super()
+    this.webSocket = new WebSocket(url)
+    this.webSocket.onmessage = async (event) => {
+      const message = JSON.parse(event.data)
+      console.log(message)
+
+      if (message.type === "offer") {
+        const event = new Event('offer')
+        this.dispatchEvent(event)
+      }
+
+      if (message.type === "answer") {
+        const event = new Event('answer')
+        this.dispatchEvent(event)
+      }
+
+      if (message.type === "ice-candidate") {
+        const event = new Event('ice-candidate')
+        this.dispatchEvent(event)
+      }
+    }
+  }
+
+  sendOffer(offer) {
+    msg = {
+      type: 'offer',
+      data: offer.toJSON()
+    }
+    this.webSocket.send(JSON.stringify(msg))
+  }
+
+}
+
 // let peerConnection = null;3
 let roomDialog = null;
 let roomId = null;
