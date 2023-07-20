@@ -16,4 +16,3 @@ class Cache:
 
     async def delete(self, key):
         await self._client.delete(key)
-

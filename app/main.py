@@ -10,17 +10,14 @@ from utils import Cache
 
 
 routes = [
-    Route('/', Homepage),
-    WebSocketRoute('/ws', Websocket),
-    Mount('/static', app=StaticFiles(directory='static'), name='static')
+    Route("/", Homepage),
+    WebSocketRoute("/ws", Websocket),
+    Mount("/static", app=StaticFiles(directory="static"), name="static"),
 ]
 
-app = Starlette(
-    routes=routes
-)
+app = Starlette(routes=routes)
 
-app.state.logger = logging.getLogger('gunicorn.error')
+app.state.logger = logging.getLogger("gunicorn.error")
 
-app.state.redis = Redis(host='redis')
+app.state.redis = Redis(host="redis")
 app.state.cache = Cache(app.state.redis)
-

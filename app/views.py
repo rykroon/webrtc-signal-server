@@ -7,12 +7,11 @@ from starlette.responses import FileResponse
 
 class Homepage(HTTPEndpoint):
     async def get(self, request):
-        return FileResponse('static/index.html')
+        return FileResponse("static/index.html")
 
 
 class Websocket(WebSocketEndpoint):
-
-    encoding = 'json'
+    encoding = "json"
 
     async def on_connect(self, ws):
         app = ws.app
@@ -21,12 +20,14 @@ class Websocket(WebSocketEndpoint):
 
         # add redis stuff
         pubsub = app.state.redis.pubsub()
-        ws.state.channel = ws.query_params['channel']
+        ws.state.channel = ws.query_params["channel"]
         await pubsub.subscribe(**{ws.state.channel: get_handler(ws)})
         ws.state.pubsub = pubsub
 
-        #create pub sub task
-        ws.state.pubsub_task = asyncio.create_task(ws.state.pubsub.run(poll_timeout=.01))
+        # create pub sub task
+        ws.state.pubsub_task = asyncio.create_task(
+            ws.state.pubsub.run(poll_timeout=0.01)
+        )
 
         await ws.accept()
 
@@ -42,8 +43,8 @@ class Websocket(WebSocketEndpoint):
         redis = app.state.redis
         cache = app.state.cache
 
-        to = data.pop('to')
-        data['from'] = ws.state.channel
+        to = data.pop("to")
+        data["from"] = ws.state.channel
 
         numsub = await redis.pubsub_numsub(to)
         if numsub[0][1]:
@@ -54,7 +55,6 @@ class Websocket(WebSocketEndpoint):
             messages.append(data)
             await cache.set(to, messages)
 
-
     async def on_disconnect(self, ws, close_code):
         ws.state.pubsub_task.cancel()
         await ws.state.pubsub.unsubscribe(ws.state.channel)
@@ -63,6 +63,7 @@ class Websocket(WebSocketEndpoint):
 
 def get_handler(ws):
     async def handler(message):
-        wsmsg = message['data'].decode()
+        wsmsg = message["data"].decode()
         await ws.send_text(wsmsg)
+
     return handler
