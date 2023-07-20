@@ -3,21 +3,19 @@ services:
     signal:
       container_name: signal-dev
       image: signal-img
-      build:
-        context: ../
-        dockerfile: ./dev/Dockerfile
+      build: .
       env_file:
-        - .env
+        - env/.env
       networks:
         - signal-network
       ports:
-        - "8000:8000"
+        - '${APP_HOST_PORT:-8000}:8000'
       volumes:
-        - '../app:/usr/src/host_app'
-      working_dir: /usr/src/host_app
+        - './app:/usr/local/src/app'
+        - './env/etc:/usr/local/etc'
     redis:
       container_name: signal-redis
-      image: redis:5.0-alpine3.9
+      image: 'redis:${REDIS_TAG:-5}'
       networks:
          - signal-network
       ports:

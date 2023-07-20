@@ -1,1 +1,6 @@
-docker compose -f dev/docker-compose.yaml up $@
+if [ -f env/.compose.env ]
+then
+    docker compose --env-file env/.compose.env -f docker-compose.yaml up $@
+else
+    docker compose -f docker-compose.yaml up $@
+fi
